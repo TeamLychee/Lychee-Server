@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id              String          @id
+  userName        String         
+  userColor       String
+  email           String          @unique
+  groupId         String
+  birth           String
+  sex             String
+  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)  
+  password        String
+  refreshToken    String
+  fcmToken        String
+  AdjustmentMinus Adjustment[]    @relation("minusUser")
+  AdjustmentPlus  Adjustment[]    @relation("plusUser")
+  CalendarUser    Calendar[]      @relation("user")
+  Feed            Feed[]
+  Notification    Notification[]
+  Participant     Participant[]
+  group           Group           @relation(fields: [groupId], references: [id])
+  UserNoti        UserNoti[]
+  UserSpendings   UserSpendings[]
+
+  @@index([groupId], map: "User_groupId_fkey")
+}
+
+model Group {
+  id            String          @id
+  groupName     String          @db.VarChar(255)
+  groupOwner    String          @unique
+  groupSpending Float
+  createdAt     DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
+  Adjustment    Adjustment[]
+  Calendar      Calendar[]
+  Feed          Feed[]
+  Notification  Notification[]
+  Participant   Participant[]
+  Schedule      Schedule[]
+  Scheduling    Scheduling[]
+  SubCategory   SubCategory[]
+  User          User[]
+  UserNoti      UserNoti[]
+  UserSpendings UserSpendings[]
+}
+
+model Feed {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  groupId   String
+  content   String   @default("")
+  createdAt DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
+  pin       Boolean  @default(false)
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([groupId], map: "Feed_groupId_fkey")
+  @@index([userId], map: "Feed_userId_fkey")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  groupId   String
+  userId    String
+  text      String   @db.LongText
+  createdAt DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
+  isDelete  Boolean  @default(false)
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([groupId], map: "Notification_groupId_fkey")
+  @@index([userId], map: "Notification_userId_fkey")
+}
+
+model UserNoti {
+  id        Int      @id @default(autoincrement())
+  groupId   String
+  userId    String   @unique
+  createdAt DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
+  updatedAt DateTime @updatedAt @db.DateTime(0)
+  state     Boolean  @default(true)
+  group     Group    @relation(fields: [groupId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@index([groupId], map: "UserNoti_groupId_fkey")
+}
+
+model Calendar {
+  id          Int           @id @default(autoincrement())
+  userId      String
+  groupId     String
+  title       String        @db.VarChar(255)
+  dateStart   DateTime      @default(dbgenerated("NOW()")) @db.DateTime(0)
+  dateEnd     DateTime      @default(dbgenerated("NOW()")) @db.DateTime(0)
+  memo        String        @db.Text
+  term        Int
+  group       Group         @relation(fields: [groupId], references: [id])
+  user        User          @relation("user", fields: [userId], references: [id])
+  Participant Participant[]
+
+  @@index([groupId], map: "Calendar_groupId_fkey")
+  @@index([userId], map: "Calendar_userId_fkey")
+}
+
+model Participant {
+  id         Int      @id @default(autoincrement())
+  groupId    String
+  userId     String
+  calendarId Int
+  calendar   Calendar @relation(fields: [calendarId], references: [id])
+  group      Group    @relation(fields: [groupId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([calendarId], map: "Participant_calendarId_fkey")
+  @@index([groupId], map: "Participant_groupId_fkey")
+  @@index([userId], map: "Participant_userId_fkey")
+}
+
+model Schedule {
+  id         Int          @id @default(autoincrement())
+  groupId    String
+  title      String
+  dates      String
+  startTime  String
+  endTime    String
+  group      Group        @relation(fields: [groupId], references: [id])
+  Scheduling Scheduling[]
+
+  @@index([groupId], map: "Schedule_groupId_fkey")
+}
+
+model Scheduling {
+  id         Int      @id @default(autoincrement())
+  groupId    String
+  scheduleId Int
+  date       String
+  time       String
+  selectedBy String
+  group      Group    @relation(fields: [groupId], references: [id])
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+
+  @@index([groupId], map: "Scheduling_groupId_fkey")
+  @@index([scheduleId], map: "Scheduling_scheduleId_fkey")
+}
+
+model UserSpendings {
+  id            Int         @id @default(autoincrement())
+  userId        String
+  groupId       String
+  spendings     Float       @default(0)
+  categoryId    Int
+  subCategoryId Int
+  createdAt     DateTime    @default(dbgenerated("NOW()")) @db.DateTime(0)
+  spendingName  String
+  isDone        Boolean     @default(false)
+  category      Category    @relation(fields: [categoryId], references: [id])
+  group         Group       @relation(fields: [groupId], references: [id])
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+
+  @@index([categoryId], map: "UserSpendings_categoryId_fkey")
+  @@index([groupId], map: "UserSpendings_groupId_fkey")
+  @@index([subCategoryId], map: "UserSpendings_subCategoryId_fkey")
+  @@index([userId], map: "UserSpendings_userId_fkey")
+}
+
+model Adjustment {
+  id          Int      @id @default(autoincrement())
+  groupId     String
+  minusUserId String?
+  plusUserId  String?
+  change      Int
+  createdAt   DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
+  group       Group    @relation(fields: [groupId], references: [id])
+  minusUser   User?    @relation("minusUser", fields: [minusUserId], references: [id])
+  plusUser    User?    @relation("plusUser", fields: [plusUserId], references: [id])
+  isDone      Boolean  @default(false)
+
+  @@index([groupId], map: "Adjustment_groupId_fkey")
+  @@index([minusUserId], map: "Adjustment_minusUserId_fkey")
+  @@index([plusUserId], map: "Adjustment_plusUserId_fkey")
+}
+
+model Category {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  SubCategory SubCategory[]
+  spendings   UserSpendings[]
+}
+
+model SubCategory {
+  id         Int             @id @default(autoincrement())
+  groupId    String
+  categoryId Int
+  name       String         
+  category   Category        @relation(fields: [categoryId], references: [id])
+  group      Group           @relation(fields: [groupId], references: [id])
+  spendings  UserSpendings[]
+
+  @@index([categoryId], map: "SubCategory_categoryId_fkey")
+  @@index([groupId], map: "SubCategory_groupId_fkey")
+  
+}
