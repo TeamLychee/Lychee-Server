@@ -47,74 +47,74 @@ const login = async (loginDto: LoginDto) => {
 
 
 //* 소셜 로그인
-const socialLogin = async (socialToken: string, socialPlatform: string) => {
-  //let socialId;
-  let email;
-  let name;
+// const socialLogin = async (socialToken: string, socialPlatform: string) => {
+//   //let socialId;
+//   let email;
+//   let name;
 
-  switch (socialPlatform) {
-    case "kakao":
-      const userKakaoData = await signInKakao(socialToken);
-      name = userKakaoData.profile_nickname;
-      email = userKakaoData.account_email; //kakao_account.email
-      break;
-  }
+//   switch (socialPlatform) {
+//     case "kakao":
+//       const userKakaoData = await signInKakao(socialToken);
+//       name = userKakaoData.profile_nickname;
+//       email = userKakaoData.account_email; //kakao_account.email
+//       break;
+//   }
 
-  if (email === undefined || email === null)
-    return message.NULL_VALUE;
+//   if (email === undefined || email === null)
+//     return message.NULL_VALUE;
 
-  //* 기존 회원인지 확인
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      email: email
-    },
-  });
+//   //* 기존 회원인지 확인
+//   const existingUser = await prisma.user.findFirst({
+//     where: {
+//       email: email
+//     },
+//   });
 
-  //미등록 유저
-  if (!existingUser) {
-    const refreshToken = getRefreshToken();
+//   //미등록 유저
+//   if (!existingUser) {
+//     const refreshToken = getRefreshToken();
      
-    const createUser = await prisma.user.create({
-      data: {
-        email: email,
-        refreshToken: refreshToken,
-      },
-    });
-    const accessToken = getToken(createUser.id);
+//     const createUser = await prisma.user.create({
+//       data: {
+//         email: email,
+//         refreshToken: refreshToken,
+//       },
+//     });
+//     const accessToken = getToken(createUser.id);
     
 
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
+//     return {
+//       accessToken,
+//       refreshToken,
+//     };
+//   }
 
 
-  //* 기존에 회원이 등록되어있으면, 자동 로그인
-  const accessToken = getToken(existingUser.id);
-  const refreshToken = getRefreshToken();
+//   //* 기존에 회원이 등록되어있으면, 자동 로그인
+//   const accessToken = getToken(existingUser.id);
+//   const refreshToken = getRefreshToken();
 
-  await prisma.user.update({
-    data: {
-      refreshToken: refreshToken,
-    },
-    where: {
-      email: email,
-    },
-  });
+//   await prisma.user.update({
+//     data: {
+//       refreshToken: refreshToken,
+//     },
+//     where: {
+//       email: email,
+//     },
+//   });
 
-  return {
-    accessToken,
-    refreshToken,
-    isSignedUp: true,
-  };
-};
+//   return {
+//     accessToken,
+//     refreshToken,
+//     isSignedUp: true,
+//   };
+// };
 
 
 
 export {
   login,
-  socialLogin
+  // socialLogin
 };
 
 

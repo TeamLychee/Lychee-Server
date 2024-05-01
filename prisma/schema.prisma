@@ -7,16 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
   id              String          @id
-  userName        String         
+  userName        String
   userColor       String
   email           String          @unique
   groupId         String
   birth           String
   sex             String
-  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)  
+  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
   password        String
   refreshToken    String
   fcmToken        String
@@ -200,12 +199,11 @@ model SubCategory {
   id         Int             @id @default(autoincrement())
   groupId    String
   categoryId Int
-  name       String         
+  name       String
   category   Category        @relation(fields: [categoryId], references: [id])
   group      Group           @relation(fields: [groupId], references: [id])
   spendings  UserSpendings[]
 
   @@index([categoryId], map: "SubCategory_categoryId_fkey")
   @@index([groupId], map: "SubCategory_groupId_fkey")
-  
 }
