@@ -9,7 +9,7 @@ UserRouter.patch('/user/update/setting/notification', auth, UserController.userN
 UserRouter.patch('/user/leave', auth, UserController.quitUser)
 
 UserRouter.get('/user/mypage', auth, UserController.getUserProfile)
-UserRouter.get('/user/all', auth, UserController.getAllMember)
+// UserRouter.get('/user/all', auth, UserController.getAllMember) // 필요없다함
 UserRouter.get('/user/setting', auth, UserController.getUserSet)
 UserRouter.get('/user/setting/notification', auth, UserController.getUserNotiState)
 
