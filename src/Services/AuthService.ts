@@ -51,8 +51,8 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
   switch (socialPlatform) {
     case 'kakao':
       const userKakaoData = await signInKakao(socialToken)
-      name = userKakaoData.profile_nickname
-      email = userKakaoData.account_email //kakao_account.email
+      name = userKakaoData.kakao_account.profile.nickname
+      email = userKakaoData.kakao_account.email
       break
   }
 

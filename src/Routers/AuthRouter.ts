@@ -9,6 +9,7 @@ AuthRouter.post('/signup', AuthController.signup)
 
 AuthRouter.post('/login', AuthController.login)
 
-AuthRouter.post('/sociallogin', signInKakao, AuthController.Sociallogin)
+// AuthRouter.post('/sociallogin', signInKakao, AuthController.Sociallogin)
+AuthRouter.post('/sociallogin', AuthController.Sociallogin)
 
 export { AuthRouter }

@@ -56,8 +56,10 @@ const Sociallogin = async (req: Request, res: Response, next: NextFunction): Pro
     return res.status(statusCode.BAD_REQUEST).send(util.fail(statusCode.BAD_REQUEST, message.BAD_REQUEST))
   }
 
-  const socialToken = req.header('accessToken')?.split(' ').reverse()[0] as string
+  // const socialToken = req.header('accessToken')?.split(' ').reverse()[0] as string
   const { socialPlatform } = req.body
+  const socialToken = '5MFTqEqAamzNwQRXP0Qkf7HBrRk2EE6rzkEKKclfAAABjz3IZ6ZPBWDH3LuH7A'
+  // const socialPlatform  = "kakao";
 
   if (socialPlatform === null || socialPlatform === undefined) {
     return res.status(statusCode.BAD_REQUEST).send(util.fail(statusCode.BAD_REQUEST, message.NULL_VALUE))
