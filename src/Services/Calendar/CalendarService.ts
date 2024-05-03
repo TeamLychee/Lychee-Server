@@ -705,6 +705,59 @@ const showScheduling = async (groupId: string, scheduleId: number) => {
   }
 }
 
+// 내 오늘 할일 보여주기
+const showMyTodo = async (groupId: string, userId: string) => {
+  try {
+    const todayDate = new Date(); // 현재 날짜와 시간을 가져옵니다.
+    const todayStartDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()); // 오늘의 시작 시간을 설정합니다.
+    const todayEndDate = new Date(todayStartDate.getTime() + 24 * 60 * 60 * 1000); // 오늘의 끝 시간을 설정합니다.
+    
+    const myEvents = await prisma.calendar.findMany({
+      where: {
+        groupId: groupId,
+        userId: userId,
+        dateStart: {
+          gte: todayStartDate,
+          lt: todayEndDate,
+        },
+      }
+    })
+
+    return myEvents
+  } catch (error) {
+    console.error('내 일정 반환 오류', error)
+    throw error
+  }
+}
+
+// 메이트의 오늘 할일들
+const showMatesTodo = async (groupId: string, userId: string) => {
+  try {
+    const todayDate = new Date(); // 현재 날짜와 시간을 가져옵니다.
+    const todayStartDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()); // 오늘의 시작 시간을 설정합니다.
+    const todayEndDate = new Date(todayStartDate.getTime() + 24 * 60 * 60 * 1000); // 오늘의 끝 시간을 설정합니다.
+    
+    const myEvents = await prisma.calendar.findMany({
+      where: {
+        groupId: groupId,
+        userId: {
+          not: userId
+        },
+        dateStart: {
+          gte: todayStartDate,
+          lt: todayEndDate,
+        },
+      }
+    })
+
+    return myEvents
+  } catch (error) {
+    console.error('메이트 일정 반환 오류', error)
+    throw error
+  }
+}
+
+
 export {
   createCalendar,
   createSchedule,
@@ -718,4 +771,6 @@ export {
   getThisWeeksDuty,
   showSchedule,
   showScheduling,
+  showMyTodo,
+  showMatesTodo
 }

@@ -19,4 +19,7 @@ CalendarRouter.get('/calendar/get/month/:dateString', auth, CalendarController.s
 CalendarRouter.get('/calendar/get/week', auth, CalendarController.getThisWeeksDuty)
 CalendarRouter.get('/calendar/schedule/schedule', auth, CalendarController.showSchedule)
 CalendarRouter.get('/calendar/schedule/timeslot/:scheduleId', auth, CalendarController.showScheduling)
+CalendarRouter.get('/calendar/todo/mine', auth, CalendarController.showMyTodo)
+CalendarRouter.get('/calendar/todo/not/mine', auth, CalendarController.showMatesTodo)
+
 export { CalendarRouter }

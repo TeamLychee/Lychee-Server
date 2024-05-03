@@ -226,6 +226,34 @@ const showScheduling = async (req: Request, res: Response) => {
   }
 }
 
+const showMyTodo = async (req: Request, res: Response) => {
+  const userId = req.body.user.id;
+  const groupId = await GroupServiceUtils.findGroupIdByUserId(userId);
+  
+  try {
+    const myTodoEvents = await CalendarService.showMyTodo(groupId, userId)
+    res.status(200).json(myTodoEvents)
+    console.log(myTodoEvents)
+  } catch (error) {
+    console.error('Error retrieving my todo events', error)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
+}
+
+const showMatesTodo = async (req: Request, res: Response) => {
+  const userId = req.body.user.id;
+  const groupId = await GroupServiceUtils.findGroupIdByUserId(userId);
+  
+  try {
+    const matesTodoEvents = await CalendarService.showMatesTodo(groupId, userId)
+    res.status(200).json(matesTodoEvents)
+    console.log(matesTodoEvents)
+  } catch (error) {
+    console.error('Error retrieving mates todo events', error)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
+}
+
 export {
   createCalendar,
   createSchedule,
@@ -238,5 +266,7 @@ export {
   showOneCalendar,
   showMonthCalendar,
   showSchedule,
-  showScheduling
+  showScheduling,
+  showMyTodo,
+  showMatesTodo
 }
