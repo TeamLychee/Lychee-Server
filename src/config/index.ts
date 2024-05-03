@@ -1,17 +1,16 @@
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'
 
-const envFound = dotenv.config();
+const envFound = dotenv.config()
 if (envFound.error) {
   // This error should crash whole process
 
-  throw new Error("⚠️  Couldn't find .env file  ⚠️");
+  throw new Error("⚠️  Couldn't find .env file  ⚠️")
 }
 
 export default {
- 
   /**
    * jwt Secret
    */
   jwtSecret: process.env.JWT_SECRET as string,
-
-};
+  defaultGroupId: process.env.DEFAULT_GROUP_ID as string,
+}

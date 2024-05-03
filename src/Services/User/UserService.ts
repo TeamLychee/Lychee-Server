@@ -17,11 +17,10 @@ const prisma = new PrismaClient()
 const createUser = async (signupDtO: SignupDto) => {
   const Id = await UserServiceUtils.createUserId()
   const userC = await UserServiceUtils.createColor()
-  const defaultGroupId = 'aaaaaa';
-  
-  const salt: string = await bcrypt.genSalt(10);
-  const userpassword = await bcrypt.hash(signupDtO.password, salt);
+  const defaultGroupId = 'aaaaaa'
 
+  const salt: string = await bcrypt.genSalt(10)
+  const userpassword = await bcrypt.hash(signupDtO.password, salt)
 
   const user = await prisma.user.create({
     data: {
@@ -32,7 +31,9 @@ const createUser = async (signupDtO: SignupDto) => {
       email: signupDtO.email,
       sex: signupDtO.sex,
       birth: signupDtO.birth,
-      password: userpassword
+      password: userpassword,
+      fcmToken: '',
+      refreshToken: '',
     },
   })
 
@@ -40,20 +41,20 @@ const createUser = async (signupDtO: SignupDto) => {
     data: {
       userId: user.id,
       groupId: user.groupId,
-      state: true
-    }
+      state: true,
+    },
   })
 
   const data = {
-      userId: user.id,
-      userName: user.userName,
-      userColor: user.userColor,
-      groupId: user.groupId,
-      email: user.email,
-      sex: user.sex,
-      birth: user.birth,
-      notificationState: userNoti.state
-    }
+    userId: user.id,
+    userName: user.userName,
+    userColor: user.userColor,
+    groupId: user.groupId,
+    email: user.email,
+    sex: user.sex,
+    birth: user.birth,
+    notificationState: userNoti.state,
+  }
 
   return data
 }
@@ -72,15 +73,15 @@ const getUserProfile = async (userId: string) => {
 
     const groupName = await GroupServiceUtils.findGroupByGroupId(userProfile.groupId)
 
-    const userGroupMembers = await GroupServiceUtils.findGroupMembersNamesColorsByGroupId(userProfile.groupId);
+    const userGroupMembers = await GroupServiceUtils.findGroupMembersNamesColorsByGroupId(userProfile.groupId)
 
     const userGroupMembersNamesColors = userGroupMembers
-      .filter(member => member.id !== userId) // 자신의 정보 제외
-      .map(member => ({
+      .filter((member) => member.id !== userId) // 자신의 정보 제외
+      .map((member) => ({
         userId: member.id,
         userName: member.userName,
         userColor: member.userColor,
-      }));
+      }))
 
     const data = {
       userId: userId,
@@ -97,7 +98,7 @@ const getUserProfile = async (userId: string) => {
 }
 
 // 그룹유저 정보 반환(본인 포함)
-const getAllMember = async (userId:string) => {
+const getAllMember = async (userId: string) => {
   try {
     const userProfile = await UserServiceUtils.findUserById(userId)
     if (!userProfile) {
@@ -110,19 +111,17 @@ const getAllMember = async (userId:string) => {
 
     const userGroupMembers = await GroupServiceUtils.findGroupMembersNamesColorsByGroupId(userProfile.groupId)
 
-    const userGroupMembersNamesColors = userGroupMembers
-      .map(member => ({
-        userId: member.id,
-        userName: member.userName,
-        userColor: member.userColor,
-      }));
-    
+    const userGroupMembersNamesColors = userGroupMembers.map((member) => ({
+      userId: member.id,
+      userName: member.userName,
+      userColor: member.userColor,
+    }))
+
     const data = {
       membernamesandcolors: userGroupMembersNamesColors,
     }
 
     return data
-
   } catch (error) {
     throw new Error('Error: Service/UserService/getAllMember')
   }
@@ -149,15 +148,14 @@ const userSetUpdate = async (userId: string, userUpdateRequestDto: UserUpdateReq
 }
 
 // 유저 정보 조회(이름&색상)
-const userSetGet = async (userId:string) => {
-
+const userSetGet = async (userId: string) => {
   const user = await UserServiceUtils.findUserById(userId)
   if (!user) {
     throw new Error('User Not Found!')
   }
 
   const data = {
-    userId : userId,
+    userId: userId,
     userName: user.userName,
     userColor: user.userColor,
   }
@@ -166,10 +164,10 @@ const userSetGet = async (userId:string) => {
 }
 
 // 유저 알림 설정 여부(on off)
-const notiYesNo = async (userId: string, notificationState:boolean) => {
+const notiYesNo = async (userId: string, notificationState: boolean) => {
   try {
-    const currentDate = new Date();
-    currentDate.setHours(currentDate.getHours() + 9);
+    const currentDate = new Date()
+    currentDate.setHours(currentDate.getHours() + 9)
 
     const notiState = await prisma.userNoti.update({
       where: {
@@ -182,10 +180,10 @@ const notiYesNo = async (userId: string, notificationState:boolean) => {
     })
 
     const data = {
-      notificationState : notiState.state,
+      notificationState: notiState.state,
       updatedAt: notiState.updatedAt,
     }
-  
+
     return data
   } catch (error) {
     throw new Error('Error: service/user/notiYesNo')
@@ -193,7 +191,7 @@ const notiYesNo = async (userId: string, notificationState:boolean) => {
 }
 
 // 유저 알림 상태 가져오기 (on off)
-const getUserNotiState = async(userId:string) => {
+const getUserNotiState = async (userId: string) => {
   try {
     const user = await UserServiceUtils.findUserById(userId)
     const userNotiId = UserServiceUtils.findUserNotiIdbyUserId(user.id)
@@ -203,7 +201,7 @@ const getUserNotiState = async(userId:string) => {
     }
 
     const data = {
-      notiState : (await userNotiId).state
+      notiState: (await userNotiId).state,
     }
 
     return data
@@ -213,43 +211,33 @@ const getUserNotiState = async(userId:string) => {
 }
 
 // 유저 탈퇴
-const quitUser = async(userId : string) => {
+const quitUser = async (userId: string) => {
   try {
     const user = await UserServiceUtils.findUserById(userId)
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('User not found')
     }
     const changedEmail = await UserServiceUtils.createEmail()
 
     const quiting = await prisma.user.updateMany({
-      where:{
-        id : user.id
+      where: {
+        id: user.id,
       },
-      data : {
-        userName : '알수없음',
-        userColor : '#ffffff',
+      data: {
+        userName: '알수없음',
+        userColor: '#ffffff',
         email: changedEmail + '@LivingMate.com',
         groupId: user.groupId,
         birth: '0000-00-00',
-        sex: 'none'
-      }
-    });
+        sex: 'none',
+      },
+    })
 
     return '탈퇴'
-
   } catch (error) {
-    console.error('Error: service/user/quitUser', error);
-    throw new Error('Error: service/user/quitUser');
+    console.error('Error: service/user/quitUser', error)
+    throw new Error('Error: service/user/quitUser')
   }
 }
 
-export {
-  createUser,
-  getUserProfile,
-  getAllMember,
-  userSetUpdate,
-  userSetGet,
-  notiYesNo,
-  getUserNotiState,
-  quitUser
-}
+export { createUser, getUserProfile, getAllMember, userSetUpdate, userSetGet, notiYesNo, getUserNotiState, quitUser }
