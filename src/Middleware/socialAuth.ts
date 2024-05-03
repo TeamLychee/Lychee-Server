@@ -7,15 +7,11 @@ import config from '../config'
 
 const signInKakao = async (socialToken: string) => {
   try {
-    const user = await axios.get(
-      // `https://kapi.kakao.com/v2/user/me`
-      config.kakaoLoginRoute,
-      {
-        headers: {
-          Authorization: `Bearer ` + `${socialToken}`,
-        },
+    const user = await axios.get(config.kakaoLoginRoute, {
+      headers: {
+        Authorization: `Bearer ` + `${socialToken}`,
       },
-    )
+    })
 
     if (!user) {
       throw errorGenerator({

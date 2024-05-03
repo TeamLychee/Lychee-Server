@@ -1,5 +1,4 @@
 import { Router } from 'express'
-//import { body } from 'express-validator/check';
 import * as AuthController from '../Controllers/AuthController'
 import { signInKakao } from '../Middleware/socialAuth'
 
@@ -9,7 +8,6 @@ AuthRouter.post('/signup', AuthController.signup)
 
 AuthRouter.post('/login', AuthController.login)
 
-// AuthRouter.post('/sociallogin', signInKakao, AuthController.Sociallogin)
 AuthRouter.post('/sociallogin', AuthController.Sociallogin)
 
 export { AuthRouter }

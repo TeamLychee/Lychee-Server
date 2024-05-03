@@ -84,10 +84,6 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
         groupId: config.defaultGroupId,
         id: Id,
         userName: name,
-        // birth: ' ',
-        // sex: ' ',
-        // password: ' ',
-        // fcmToken: ' ',
       },
     })
 
