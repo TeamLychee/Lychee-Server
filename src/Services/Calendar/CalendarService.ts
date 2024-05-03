@@ -708,14 +708,23 @@ const showScheduling = async (groupId: string, scheduleId: number) => {
 // 내 오늘 할일 보여주기
 const showMyTodo = async (groupId: string, userId: string) => {
   try {
-    const todayDate = new Date(); // 현재 날짜와 시간을 가져옵니다.
+    const todayDate = new Date(); // 현재 날짜와 시간
     const todayStartDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()); // 오늘의 시작 시간을 설정합니다.
     const todayEndDate = new Date(todayStartDate.getTime() + 24 * 60 * 60 * 1000); // 오늘의 끝 시간을 설정합니다.
     
-    const myEvents = await prisma.calendar.findMany({
+    const meParticipant = await prisma.participant.findMany({
       where: {
-        groupId: groupId,
-        userId: userId,
+        userId: userId
+      }
+    })
+
+    const calendarIds = meParticipant.map(participant => participant.calendarId);
+
+    const events = await prisma.calendar.findMany({
+      where:{
+        id:{
+          in: calendarIds
+        },
         dateStart: {
           gte: todayStartDate,
           lt: todayEndDate,
@@ -723,9 +732,9 @@ const showMyTodo = async (groupId: string, userId: string) => {
       }
     })
 
-    return myEvents
+    return events
   } catch (error) {
-    console.error('내 일정 반환 오류', error)
+    console.error('내 오늘 일정 반환 오류', error)
     throw error
   }
 }
@@ -737,11 +746,27 @@ const showMatesTodo = async (groupId: string, userId: string) => {
     const todayStartDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()); // 오늘의 시작 시간을 설정합니다.
     const todayEndDate = new Date(todayStartDate.getTime() + 24 * 60 * 60 * 1000); // 오늘의 끝 시간을 설정합니다.
     
-    const myEvents = await prisma.calendar.findMany({
+    const meParticipants = await prisma.participant.findMany({
       where: {
-        groupId: groupId,
+        userId: userId
+      }
+    });
+    const meCalendarIds = meParticipants.map(participant => participant.calendarId);
+
+    const otherParticipant = await prisma.participant.findMany({
+      where: {
         userId: {
           not: userId
+        }
+      }
+    })
+    const filteredParticipants = otherParticipant.filter(participant => !meCalendarIds.includes(participant.calendarId));
+    const calendarIds = filteredParticipants.map(participant => participant.calendarId);
+
+    const events = await prisma.calendar.findMany({
+      where:{
+        id:{
+          in: calendarIds
         },
         dateStart: {
           gte: todayStartDate,
@@ -750,9 +775,9 @@ const showMatesTodo = async (groupId: string, userId: string) => {
       }
     })
 
-    return myEvents
+    return events
   } catch (error) {
-    console.error('메이트 일정 반환 오류', error)
+    console.error('메이트 오늘 일정 반환 오류', error)
     throw error
   }
 }
