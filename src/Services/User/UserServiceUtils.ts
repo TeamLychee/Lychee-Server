@@ -1,14 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
-import { SignupDto } from '../../DTOs/Auth/Requests/SignupDto'
-import { UserUpdateRequestDto } from '../../DTOs/User/Request/UserUpdateRequestDto'
-import { UserUpdateResponseDto } from '../../DTOs/User/Response/UserUpdateResponseDto'
-import { UserProfileResponseDto } from '../../DTOs/User/Response/UserProfileResponseDto'
-import * as GroupService from '../Group/GroupService'
-import * as GroupServiceUtils from '../Group/GroupServiceUtils'
 import * as NotificationService from '../NotificationService'
 import message from '../../modules/message'
-import { sign } from 'crypto'
 
 const findUserById = async (userId: string) => {
   try {
@@ -16,19 +9,18 @@ const findUserById = async (userId: string) => {
       where: {
         id: userId,
       },
-    });
+    })
 
     if (!user) {
-      throw new Error('User not found!');
+      throw new Error('User not found!')
     }
 
-    return user;
+    return user
   } catch (error) {
-    console.error('Error finding user by ID:', error);
-    throw error;
+    console.error('Error finding user by ID:', error)
+    throw error
   }
-};
-
+}
 
 //유저 아이디로 유저 이름 찾기
 async function getUserNameByUserId(userId: string) {
@@ -51,17 +43,17 @@ async function getUserNameByUserId(userId: string) {
 }
 
 const updateUserColor = async (userId: string) => {
-    const color = await createColor()
-    const userWithColor = await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        userColor: color,
-      },
-    })
-    return userWithColor
-  }
+  const color = await createColor()
+  const userWithColor = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      userColor: color,
+    },
+  })
+  return userWithColor
+}
 
 // userId로 userColor 찾기
 const findUserColorByUserId = async (userId: string) => {
@@ -83,10 +75,8 @@ const findUserColorByUserId = async (userId: string) => {
   }
 }
 
-
 //+ 그룹 참여하는 서비스
 const addUserToGroup = async (userId: string, groupId: string) => {
-
   await prisma.user.update({
     where: {
       id: userId,
@@ -95,15 +85,14 @@ const addUserToGroup = async (userId: string, groupId: string) => {
       groupId: groupId,
     },
   })
-  
+
   await NotificationService.makeNotification(groupId, userId, 'newUser')
-  
+
   //return data
 }
 
 // userNoti groupId도 바꿔주기
 const addUserNotiToGroup = async (userId: string, groupId: string) => {
-  
   await prisma.userNoti.update({
     where: {
       userId: userId,
@@ -112,7 +101,6 @@ const addUserNotiToGroup = async (userId: string, groupId: string) => {
       groupId: groupId,
     },
   })
-  
 }
 
 const createColor = async () => {
@@ -160,11 +148,11 @@ const createEmail = async () => {
   return result
 }
 
-const findUserNotiIdbyUserId = async (userId:string) => {
+const findUserNotiIdbyUserId = async (userId: string) => {
   try {
     const data = await prisma.userNoti.findUnique({
       where: {
-        userId: userId
+        userId: userId,
       },
     })
     if (!data) {
@@ -178,11 +166,11 @@ const findUserNotiIdbyUserId = async (userId:string) => {
   }
 }
 
-const findGroupOwner = async(groupId:string) => {
+const findGroupOwner = async (groupId: string) => {
   try {
     const data = await prisma.group.findUnique({
       where: {
-        id: groupId
+        id: groupId,
       },
     })
     if (!data) {
@@ -196,8 +184,6 @@ const findGroupOwner = async(groupId:string) => {
   }
 }
 
-
-
 export {
   findUserById,
   getUserNameByUserId,
@@ -210,5 +196,5 @@ export {
   createUserId,
   createEmail,
   findUserNotiIdbyUserId,
-  findGroupOwner
+  findGroupOwner,
 }

@@ -13,4 +13,5 @@ export default {
    */
   jwtSecret: process.env.JWT_SECRET as string,
   defaultGroupId: process.env.DEFAULT_GROUP_ID as string,
+  kakaoLoginRoute: process.env.KAKAO_LOGIN_ROUTE as string,
 }

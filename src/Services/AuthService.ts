@@ -20,7 +20,7 @@ const login = async (loginDto: LoginDto) => {
       },
     })
 
-    if (!user)
+    if (!user || !user.password)
       throw errorGenerator({
         msg: message.NOT_FOUND_USER_EMAIL,
         statusCode: statusCode.NOT_FOUND,
@@ -45,7 +45,6 @@ const login = async (loginDto: LoginDto) => {
 
 //* 소셜 로그인
 const socialLogin = async (socialToken: string, socialPlatform: string) => {
-  //let socialId;
   let email
   let name
 
@@ -58,8 +57,11 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
   }
 
   if (email === undefined || email === null) {
-    throw new Error('Email is not provided')
-  } // 이거 메세지 던지는 것으로 수정 필요
+    throw errorGenerator({
+      msg: message.INVALID_EMAIL,
+      statusCode: statusCode.UNAUTHORIZED,
+    })
+  }
 
   //* 기존 회원인지 확인
   const existingUser = await prisma.user.findFirst({
@@ -82,23 +84,19 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
         groupId: config.defaultGroupId,
         id: Id,
         userName: name,
-        birth: ' ',
-        sex: ' ',
-        password: ' ',
-        fcmToken: ' ',
+        // birth: ' ',
+        // sex: ' ',
+        // password: ' ',
+        // fcmToken: ' ',
       },
     })
-    //const accessToken = getToken(createUser.id);
 
     return {
-      // accessToken,
-      // refreshToken,
       userId: createUser.id,
     }
   }
 
   //* 기존에 회원이 등록되어있으면, 자동 로그인
-  // const accessToken = getToken(existingUser.id);
   const refreshToken = getRefreshToken()
 
   await prisma.user.update({
@@ -111,9 +109,6 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
   })
 
   return {
-    // accessToken,
-    // refreshToken,
-    // isSignedUp: true,
     userId: existingUser.id,
   }
 }

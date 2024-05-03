@@ -3,10 +3,11 @@ import jwt from 'jsonwebtoken'
 import errorGenerator from '../../error/errorGenerator'
 import statusCode from '../modules/statusCode'
 import message from '../modules/message'
+import config from '../config'
 
 const signInKakao = async (socialToken: string) => {
   try {
-    const user = await axios.get('https://kapi.kakao.com/v2/user/me', {
+    const user = await axios.get(config.kakaoLoginRoute, {
       headers: {
         Authorization: `Bearer ${socialToken}`,
       },
