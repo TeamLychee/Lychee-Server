@@ -31,9 +31,7 @@ const createUser = async (signupDtO: SignupDto) => {
       email: signupDtO.email,
       sex: signupDtO.sex,
       birth: signupDtO.birth,
-      password: userpassword,
-      refreshToken: 'test',
-      fcmToken: 'test',
+      password: userpassword
     },
   })
 
@@ -71,7 +69,7 @@ const getUserProfile = async (userId: string) => {
       throw new Error('User has no group!')
     }
 
-    const groupName = await GroupServiceUtils.findGroupByGroupId(userProfile.groupId)
+    // const groupName = await GroupServiceUtils.findGroupByGroupId(userProfile.groupId)
 
     const userGroupMembers = await GroupServiceUtils.findGroupMembersNamesColorsByGroupId(userProfile.groupId)
 
@@ -83,15 +81,15 @@ const getUserProfile = async (userId: string) => {
         userColor: member.userColor,
       }))
 
-    const data = {
-      userId: userId,
-      userName: userProfile.userName,
-      userColor: userProfile.userColor,
-      groupName: groupName,
-      membernamesandcolors: userGroupMembersNamesColors,
-    }
+    // const data = {
+    //   // userId: userId,
+    //   // userName: userProfile.userName,
+    //   // userColor: userProfile.userColor,
+    //   // groupName: groupName,
+    //   userGroupMembersNamesColors,
+    // }
 
-    return data
+    return userGroupMembersNamesColors
   } catch (error) {
     throw new Error('Error: getUserProfile:service')
   }
