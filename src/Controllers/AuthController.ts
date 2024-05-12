@@ -56,7 +56,8 @@ const Sociallogin = async (req: Request, res: Response, next: NextFunction): Pro
     return res.status(statusCode.BAD_REQUEST).send(util.fail(statusCode.BAD_REQUEST, message.BAD_REQUEST))
   }
 
-  const socialToken = req.header('accessToken')?.split(' ').reverse()[0] as string
+  const socialToken = req.headers['authorization']?.split(' ').reverse()[0] as string
+
   const { socialPlatform } = req.body
 
   if (socialPlatform === null || socialPlatform === undefined) {

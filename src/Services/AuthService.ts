@@ -5,7 +5,7 @@ import message from '../modules/message'
 import statusCode from '../modules/statusCode'
 import { LoginDto } from '../DTOs/Auth/Requests/LoginDto'
 import { getToken, getRefreshToken } from '../Middleware/jwtHandler'
-import { signInKakao } from '../Middleware/socialAuth'
+import { signInGoogle, signInKakao } from '../Middleware/socialAuth'
 import { SignupDto } from '../DTOs/Auth/Requests/SignupDto'
 import * as UserServiceUtils from '../Services/User/UserServiceUtils'
 import config from '../config'
@@ -53,6 +53,12 @@ const socialLogin = async (socialToken: string, socialPlatform: string) => {
       const userKakaoData = await signInKakao(socialToken)
       name = userKakaoData.kakao_account.profile.nickname
       email = userKakaoData.kakao_account.email
+      break
+
+    case 'google':
+      const userGoogleData = await signInGoogle(socialToken)
+      name = userGoogleData.data.name
+      email = userGoogleData.data.email
       break
   }
 

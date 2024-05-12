@@ -1,6 +1,5 @@
 import { Router } from 'express'
 import * as AuthController from '../Controllers/AuthController'
-import { signInKakao } from '../Middleware/socialAuth'
 
 const AuthRouter: Router = Router()
 
