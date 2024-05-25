@@ -99,8 +99,10 @@ model Calendar {
   title       String        @db.VarChar(255)
   dateStart   DateTime      @default(dbgenerated("NOW()")) @db.DateTime(0)
   dateEnd     DateTime      @default(dbgenerated("NOW()")) @db.DateTime(0)
-  memo        String        @db.Text
+  // memo        String        @db.Text
   term        Int
+  originId    Int
+  createdAt   DateTime      @default(dbgenerated("NOW()")) @db.DateTime(0)
   group       Group         @relation(fields: [groupId], references: [id])
   user        User          @relation("user", fields: [userId], references: [id])
   Participant Participant[]
