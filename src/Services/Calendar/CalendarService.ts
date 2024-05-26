@@ -20,7 +20,7 @@ import { da } from 'date-fns/locale'
 import { preloadStyle } from 'next/dist/server/app-render/entry-base'
 
 // CREATE -------------------------------
-// 일정등록(바로등록용)
+// 일정등록
 const createCalendar = async (userId: string, groupId: string, calendarCreateDto: CalendarCreateDto) => {
   try {
     const user = await UserServiceUtils.findUserById(userId)
@@ -179,6 +179,8 @@ const createScheduling = async (
 
 // ----------------------------- PATCH
 // 이 이벤트만 update
+// 주기가 0인 이벤트 사용
+// 주기가 있던 이벤트 중 하나만을 update할 경우 새로운 originId를 가진 별개의 일정이 됨
 const updateThisCalendar = async (
   userId: string,
   groupId: string,
@@ -196,8 +198,8 @@ const updateThisCalendar = async (
       },
       data: {
         title: calendarUpdateDto.title,
-        dateStart: calendarUpdateDto.dateStart,
-        dateEnd: calendarUpdateDto.dateEnd,
+        dateStart: new Date(dayjs(calendarUpdateDto.dateStart).format('YYYY-MM-DD HH:mm:ss')),
+        dateEnd: new Date(dayjs(calendarUpdateDto.dateEnd).format('YYYY-MM-DD HH:mm:ss')),
         term: calendarUpdateDto.term,
         originId: newOriginId,
       },
@@ -228,11 +230,37 @@ const updateAfterCalendar = async (
   userId: string,
   groupId: string,
   calendarId: number,
+  calendarCreateDto: CalendarCreateDto
+) => {
+  try {
+    const user = await UserServiceUtils.findUserById(userId)
+    const group = await GroupServiceUtils.findGroupById(groupId)
+    await CalendarServiceUtils.makeOriginId()
+    await CalendarServiceUtils.findCalendarEventById(calendarId)
+
+    await CalendarServiceUtils.deleteAfterCalendarUtil(calendarId)
+    const data = await createCalendar(user.id, group.id, calendarCreateDto)
+    
+    return data
+
+  } catch (error) {
+    console.error('error :: service/calendar/updateAfterCalendar', error)
+    throw error
+  }
+}
+
+/* // 이후 모든 이벤트 update
+const updateAfterCalendar = async (
+  userId: string,
+  groupId: string,
+  calendarId: number,
   calendarUpdateDto: CalendarUpdateDto,
 ) => {
   try {
     await UserServiceUtils.findUserById(userId)
     await GroupServiceUtils.findGroupById(groupId)
+    const newOriginId = await CalendarServiceUtils.makeOriginId()
+    
     const existingEvent = await CalendarServiceUtils.findCalendarEventById(calendarId)
 
     if (!existingEvent) {
@@ -242,17 +270,18 @@ const updateAfterCalendar = async (
     // Case 1: Term이 없는 이벤트를 Term이 생긴 이벤트(매일, 매주, 매달, 매년)로 수정 (단독일정 -> 반복일정)
     if (!existingEvent.term && calendarUpdateDto.term) {
       // 기존 이벤트 삭제
-      await prisma.participant.deleteMany({
-        where: {
-          calendarId: calendarId,
-        },
-      })
+      // await prisma.participant.deleteMany({
+      //   where: {
+      //     calendarId: calendarId,
+      //   },
+      // })
 
-      await prisma.calendar.delete({
-        where: {
-          id: calendarId,
-        },
-      })
+      // await prisma.calendar.delete({
+      //   where: {
+      //     id: calendarId,
+      //   },
+      // })
+      await CalendarServiceUtils.deleteAfterCalendarUtil(calendarId)
 
       let createdEvents = []
 
@@ -277,12 +306,12 @@ const updateAfterCalendar = async (
     // 반복일정의 첫번째부터 수정시 : 처음부터 다 지우고 처음 이벤트를 update
     // 반복일정의 중간부터 수정시 : 중간부터 지우고 그 이후 이벤트를 update
     if (existingEvent.term && !calendarUpdateDto.term) {
-      await CalendarServiceUtils.deleteRepeatCalendar(
+      await CalendarServiceUtils.deleteAfterCalendarUtil(
         calendarId,
-        existingEvent.term,
-        existingEvent.userId,
-        existingEvent.groupId,
-        existingEvent.title,
+        // existingEvent.term,
+        // existingEvent.userId,
+        // existingEvent.groupId,
+        // existingEvent.title,
         // existingEvent.memo || '',
       )
 
@@ -381,23 +410,32 @@ const updateAfterCalendar = async (
     throw error
   }
 }
+*/
 
 // DELETE ------------------------------
 // 이 이벤트만 삭제
-const deleteThisCalendar = async (userId: string, groupId: string, calendarId: number) => {
+const deleteThisCalendar = async (calendarId: number) => {
   try {
-    await GroupServiceUtils.findGroupById(groupId)
-    const existingEvent = await CalendarServiceUtils.findCalendarEventById(calendarId)
 
+    const existingEvent = await CalendarServiceUtils.findCalendarEventById(calendarId)
     if (!existingEvent) {
       throw new Error(message.NOT_FOUND_CAL)
     }
 
-    await prisma.calendar.delete({
+    await prisma.participant.deleteMany({
       where: {
-        id: calendarId,
+        calendarId: existingEvent.id
       },
     })
+
+    await prisma.calendar.delete({
+      where: {
+        id: existingEvent.id,
+      },
+    })
+
+    return 0
+
   } catch (error) {
     console.error('error :: service/calendar/deleteThisCalendar', error)
     throw error
@@ -418,6 +456,7 @@ const deleteAfterCalendar = async (userId: string, groupId: string, calendarId: 
       const deletedEvents = await CalendarServiceUtils.deleteAfterCalendarUtil(calendarId)
       return deletedEvents
     }
+
   } catch (error) {
     console.error('error :: service/calendar/deleteAfterCalendar', error)
     throw error
@@ -449,7 +488,6 @@ const deleteAfterCalendar = async (userId: string, groupId: string, calendarId: 
 
 // GET --------------------------------------
 // 일정 보여주기
-
 const showCalendar = async (groupId: string) => {
   try {
     // 캘린더 이벤트 가져오기
@@ -495,6 +533,7 @@ const showCalendar = async (groupId: string) => {
   }
 }
 
+// 월별 일정 보여주기
 const showMonthCalendar = async (groupId: string, dateString: string) => {
   try {
     // const { startDate, endDate } = CalendarServiceUtils.getCurrentMonthDates()
@@ -555,6 +594,7 @@ const showMonthCalendar = async (groupId: string, dateString: string) => {
   }
 }
 
+// 개별 일정 보여주기
 const showOneCalendar = async (calendarId: number) => {
   try {
     const calendarEvents = await prisma.calendar.findMany({
@@ -664,7 +704,7 @@ const getThisWeeksDuty = async (groupId: string) => {
   }
 }
 
-// // 스케줄 보여주기
+/* // // 스케줄 보여주기
 // const showSchedule = async (groupId: string) => {
 //   try {
 //     const scheduleEvents = await prisma.schedule.findMany({
@@ -729,9 +769,10 @@ const getThisWeeksDuty = async (groupId: string) => {
 //     throw error
 //   }
 // }
+*/
+
 
 // 내 오늘 할일 보여주기
-
 const showMyTodo = async (groupId: string, userId: string) => {
   try {
     const todayDate = new Date() // 현재 날짜와 시간
@@ -765,7 +806,7 @@ const showMyTodo = async (groupId: string, userId: string) => {
   }
 }
 
-// 메이트의 오늘 할일들
+// 메이트의 오늘 할일 보여주기
 const showMatesTodo = async (groupId: string, userId: string) => {
   try {
     const todayDate = new Date() // 현재 날짜와 시간을 가져옵니다.

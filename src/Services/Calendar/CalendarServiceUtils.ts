@@ -259,7 +259,7 @@ const createRepeatCalendar = async (
   }
 }
 
-// 반복 일정 업뎃 유틸
+/* // 반복 일정 업뎃 유틸
 // const updateRepeatCalendar = async (
 //   userId: string,
 //   groupId: string,
@@ -378,10 +378,7 @@ const createRepeatCalendar = async (
 //     console.error('error :: service/calendar/calendarServiceUtil/deleteRepeatCalendar', error)
 //     throw error
 //   }
-// }
-
-
-
+// } */
 
 
 // ----------------------------------DELETE
@@ -391,7 +388,7 @@ const deleteAfterCalendarUtil = async (
 ): Promise<void> => {
   try {
 
-    const originIdsToDelete = await findOriginId(calendarId)
+    const originIdToDelete = await findOriginId(calendarId)
 
     // Step 1: 삭제할 calendarId의 originId 조회
     const calendarIdsToDelete = await prisma.calendar.findMany({
@@ -399,7 +396,7 @@ const deleteAfterCalendarUtil = async (
         id: {
           gte: calendarId,
         },
-        originId: originIdsToDelete
+        originId: originIdToDelete
       },
       select: {
         id: true
@@ -415,10 +412,13 @@ const deleteAfterCalendarUtil = async (
       },
     })
 
-    // Step 3: 실제 calendar 삭제
+    // Step 3: 실제 calendar들 삭제
     const deletedCalendars = await prisma.calendar.deleteMany({
       where: {
-        originId: originIdsToDelete
+        id: {
+          gte: calendarId,
+        },
+        originId: originIdToDelete
       }
     })
 
