@@ -360,23 +360,27 @@ const showByCategory = async (groupId: string, category: string) => {
 
   return BudgetsToShow
 }
+//db에 커스텀 지출 리스트 등록하기
 
-const getCustomSpendingList = async (groupId: string, customSpendingList: CustomSpendingDto[]) => {
+//db에서 커스텀 지출 리스트 가져오기
+const getCustomSpendingList = async (groupId: string): Promise<{ userId: string; spendingPortion: string }[]> => {
+  // spendingPortion을 string으로 할까 아니면 string[]으로 할까...........
+  return []
+}
+
+const calculateCustomSpendingList = async (groupId: string) => {
+  //getCustomSpendingList 호출
+  let customSpendingList = await getCustomSpendingList(groupId)
   let adjustmentList = new Map()
 
-  for (let i = 0; i < customSpendingList.length; i++) {
-    let receiver = customSpendingList[i].userId // 돈을 받을 사람
-    let senderList = customSpendingList[i].spendingPortion.split(',') // 돈을 보내야되는 사람들
+  for (let spending of customSpendingList) {
+    let receiver = spending.userId // 돈을 받을 사람
+    let senderList = spending.spendingPortion.split(',') // 돈을 보내야되는 사람들
 
     for (let j = 0; j < senderList.length; j += 2) {
       let senderToReceiver = `${senderList[j]}-${receiver}`
       let receiverToSender = `${receiver}-${senderList[j]}`
       let amount = parseInt(senderList[j + 1])
-
-      console.log(`--------spendings[${i}] ${j}번째---------------`)
-      console.log(`senderToReceiver: ${senderToReceiver}`)
-      console.log(`receiverToSender: ${receiverToSender}`)
-      console.log(`amount: ${amount}`)
 
       if (adjustmentList.has(senderToReceiver)) {
         console.log('when adjustmentList.get(senderToReceiver)!=null 정방향 조합이 있을때')
