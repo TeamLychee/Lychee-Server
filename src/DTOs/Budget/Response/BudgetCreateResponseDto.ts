@@ -4,8 +4,8 @@ export interface BudgetCreateResponseDto extends BudgetCreateRequestDto {
   id: number
   userId: string
   groupId: string
-  userColor: string
+  userColor: string | null
   userName: string
   createdAt: Date
-  isDone : boolean
+  isDone: boolean
 }

@@ -490,6 +490,9 @@ const getUserSpending = async (groupId: string): Promise<{ userId: string; userS
   await Promise.all(
     userSpendings.map(async (budget) => {
       let resUserColor = await UserServiceUtils.findUserColorByUserId(budget.userId)
+      if (!resUserColor) {
+        throw new Error('Null error: no userColor in groupMemberSpendings')
+      }
       let resUserName = await UserServiceUtils.getUserNameByUserId(budget.userId)
       let spending = budget._sum.spendings
 
@@ -667,6 +670,14 @@ const takeFromAdjustments = async (groupId: string) => {
       let minusUserName = await UserServiceUtils.getUserNameByUserId(record.minusUserId)
       let minusUserColor = await UserServiceUtils.findUserColorByUserId(record.minusUserId)
       let change = record.change
+
+      if (!plusUserColor) {
+        throw new Error('Null Error: plusUserColor')
+      }
+
+      if (!minusUserColor) {
+        throw new Error('Null Error: minusUserColor')
+      }
 
       AdjustmentToReturn.push({
         plusUserId,
