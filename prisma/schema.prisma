@@ -8,47 +8,49 @@ datasource db {
 }
 
 model User {
-  id              String          @id
-  userName        String
-  userColor       String
-  email           String          @unique
-  groupId         String
-  birth           String
-  sex             String
-  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
-  password        String
-  refreshToken    String
-  fcmToken        String
-  AdjustmentMinus Adjustment[]    @relation("minusUser")
-  AdjustmentPlus  Adjustment[]    @relation("plusUser")
-  CalendarUser    Calendar[]      @relation("user")
-  Feed            Feed[]
-  Notification    Notification[]
-  Participant     Participant[]
-  group           Group           @relation(fields: [groupId], references: [id])
-  UserNoti        UserNoti[]
-  UserSpendings   UserSpendings[]
+  id                  String                @id
+  userName            String
+  userColor           String?
+  email               String                @unique
+  groupId             String
+  birth               String?
+  sex                 String?
+  createdAt           DateTime              @default(dbgenerated("NOW()")) @db.DateTime(0)
+  password            String?
+  refreshToken        String?
+  fcmToken            String?
+  AdjustmentMinus     Adjustment[]          @relation("minusUser")
+  AdjustmentPlus      Adjustment[]          @relation("plusUser")
+  CalendarUser        Calendar[]            @relation("user")
+  Feed                Feed[]
+  Notification        Notification[]
+  Participant         Participant[]
+  group               Group                 @relation(fields: [groupId], references: [id])
+  UserNoti            UserNoti[]
+  UserSpendings       UserSpendings[]
+  CustomUserSpendings CustomUserSpendings[]
 
   @@index([groupId], map: "User_groupId_fkey")
 }
 
 model Group {
-  id            String          @id
-  groupName     String          @db.VarChar(255)
-  groupOwner    String          @unique
-  groupSpending Float
-  createdAt     DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
-  Adjustment    Adjustment[]
-  Calendar      Calendar[]
-  Feed          Feed[]
-  Notification  Notification[]
-  Participant   Participant[]
-  Schedule      Schedule[]
-  Scheduling    Scheduling[]
-  SubCategory   SubCategory[]
-  User          User[]
-  UserNoti      UserNoti[]
-  UserSpendings UserSpendings[]
+  id                  String                @id
+  groupName           String                @db.VarChar(255)
+  groupOwner          String                @unique
+  groupSpending       Float
+  createdAt           DateTime              @default(dbgenerated("NOW()")) @db.DateTime(0)
+  Adjustment          Adjustment[]
+  Calendar            Calendar[]
+  Feed                Feed[]
+  Notification        Notification[]
+  Participant         Participant[]
+  Schedule            Schedule[]
+  Scheduling          Scheduling[]
+  SubCategory         SubCategory[]
+  User                User[]
+  UserNoti            UserNoti[]
+  UserSpendings       UserSpendings[]
+  CustomUserSpendings CustomUserSpendings[]
 }
 
 model Feed {
@@ -168,6 +170,21 @@ model UserSpendings {
   @@index([categoryId], map: "UserSpendings_categoryId_fkey")
   @@index([groupId], map: "UserSpendings_groupId_fkey")
   @@index([subCategoryId], map: "UserSpendings_subCategoryId_fkey")
+  @@index([userId], map: "UserSpendings_userId_fkey")
+}
+
+model CustomUserSpendings {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  groupId   String
+  spendings Float    @default(0)
+  createdAt DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
+  isDone    Boolean  @default(false)
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([groupId], map: "UserSpendings_groupId_fkey")
   @@index([userId], map: "UserSpendings_userId_fkey")
 }
 
