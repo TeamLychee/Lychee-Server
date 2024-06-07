@@ -26,21 +26,77 @@ const findCalendarEventById = async (calendarId: number) => {
   }
 }
 
-// 일정조율1 ID로 일정조율2에 해당하는 타임슬럿들 갖고오기
-const findSchedulingEventById = async (eventId: number) => {
-  try {
-    const event = await prisma.scheduling.findMany({
-      where: {
-        scheduleId: eventId,
-      },
+// 가장 최근 캘린더Id 반환, 없으면 0 반환
+const findRecentCalendar = async () => {
+  try{
+    const lastestEvent = await prisma.calendar.findFirst({
+      orderBy:{
+        createdAt: 'desc'
+      }
     })
 
-    return event
+    if(!lastestEvent){
+      return 0;
+    }
+
+    return lastestEvent
   } catch (error) {
-    console.error('error :: service/calendar/CalendarServiceUtils/findSchedulingEventById', error)
+    console.error('error :: service/calendar/CalendarServiceUtils/findRecentCalendar', error)
     throw error
   }
 }
+
+// 반환된 최근 캘린더 레코드 기반으로 calendar.originId 생성
+const makeOriginId = async () => {
+  try {
+    const latestCalendar = await findRecentCalendar()
+
+    // 만약 latestCalendar 반환값이 있다면
+    if(!latestCalendar){
+      return 1;
+    } else {
+      const latestOriginId = latestCalendar.originId;
+      return latestOriginId + 1;
+    }
+
+  } catch (error) {
+    console.error('error :: service/calendar/CalendarServiceUtils/findCalendarEventById', error)
+    throw error
+  }
+}
+
+// calendarId 기반으로 originId 찾아주기
+const findOriginId = async(calendarId: number) => {
+  try {
+    const data = await prisma.calendar.findUnique({
+      where: {
+        id: calendarId
+      }
+    })
+
+    return data?.originId
+
+  } catch (error) {
+    console.error('error :: service/calendar/CalendarServiceUtils/findOriginId', error)
+    throw error
+  }
+}
+
+/* // // 일정조율1 ID로 일정조율2에 해당하는 타임슬럿들 갖고오기
+// const findSchedulingEventById = async (eventId: number) => {
+//   try {
+//     const event = await prisma.scheduling.findMany({
+//       where: {
+//         scheduleId: eventId,
+//       },
+//     })
+
+//     return event
+//   } catch (error) {
+//     console.error('error :: service/calendar/CalendarServiceUtils/findSchedulingEventById', error)
+//     throw error
+//   }
+// } */
 
 // 캘린더 Id로 해당하는 participants들 받아오기
 const findParticipantEventById = async (eventId: number) => {
@@ -58,19 +114,71 @@ const findParticipantEventById = async (eventId: number) => {
   }
 }
 
-// 스케줄이 존재하는지 확인
-const checkExistSchedule = async (eventId: number) => {
+
+/* // // 스케줄이 존재하는지 확인
+// const checkExistSchedule = async (eventId: number) => {
+//   try {
+//     const event = await prisma.schedule.findUnique({
+//       where: {
+//         id: eventId,
+//       },
+//     })
+//     if (event) {
+//       throw new Error('already made schedule')
+//     }
+//   } catch (error) {
+//     console.error('error :: service/calendar/CalendarServiceUtils/checkExistSchedule', error)
+//     throw error
+//   }
+// } */
+
+
+// 단독 일정 생성 유틸
+const createOneCalendar = async (
+  userId: string,
+  groupId: string,
+  calendarCreateDto: CalendarCreateDto,
+) => {
   try {
-    const event = await prisma.schedule.findUnique({
-      where: {
-        id: eventId,
+    const createdEvents = []
+    const newOriginId = await makeOriginId()
+
+    const event = await prisma.calendar.create({
+      data: {
+        userId: userId,
+        groupId: groupId,
+        title: calendarCreateDto.title,
+        dateStart: new Date(dayjs(calendarCreateDto.dateStart).format('YYYY-MM-DD HH:mm:ss')),
+        dateEnd: new Date(dayjs(calendarCreateDto.dateEnd).format('YYYY-MM-DD HH:mm:ss')),
+        term: calendarCreateDto.term,
+        // memo: calendarCreateDto.memo || '',
+        originId: newOriginId
       },
     })
-    if (event) {
-      throw new Error('already made schedule')
+
+    // 알림 생성
+    await NotificationService.makeNotification(groupId, userId, 'createCalendar')
+
+    // 참여자 레코드 생성
+    await createParticipants(calendarCreateDto.participants, groupId, event.id)
+
+    const data = {
+      calendarId: event.id,
+      userId: event.userId,
+      groupId: event.groupId,
+      title: event.title,
+      dateStart: dayjs(event.dateStart).format('YYYY-MM-DD HH:mm:ss'),
+      dateEnd: dayjs(event.dateEnd).format('YYYY-MM-DD HH:mm:ss'),
+      term: event.term,
+      // memo: event.memo,
+      participants: await makeArray(event.id),
     }
+
+    createdEvents.push(data)
+    return createdEvents
+
   } catch (error) {
-    console.error('error :: service/calendar/CalendarServiceUtils/checkExistSchedule', error)
+    console.error('error :: service/calendar/calendarServiceUtil/createOneCalendar', error)
     throw error
   }
 }
@@ -87,6 +195,7 @@ const createRepeatCalendar = async (
 
     const startDate = new Date(dayjs(calendarCreateDto.dateStart).format('YYYY-MM-DD HH:mm:ss'))
     const endDate = new Date(dayjs(calendarCreateDto.dateEnd).format('YYYY-MM-DD HH:mm:ss'))
+    const newOriginId = await makeOriginId()
 
     for (let i = 0; i < recurrenceCount; i++) {
       const event = await prisma.calendar.create({
@@ -97,11 +206,12 @@ const createRepeatCalendar = async (
           dateStart: new Date(startDate),
           dateEnd: new Date(endDate),
           term: calendarCreateDto.term,
-          memo: calendarCreateDto.memo || '',
+          // memo: calendarCreateDto.memo || '',
+          originId: newOriginId
         },
       })
 
-      await multipleParticipants(calendarCreateDto.participants, groupId, event.id)
+      await createParticipants(calendarCreateDto.participants, groupId, event.id)
 
       const data = {
         calendarId: event.id,
@@ -111,7 +221,7 @@ const createRepeatCalendar = async (
         dateStart: dayjs(event.dateStart).format('YYYY-MM-DD HH:mm:ss'),
         dateEnd: dayjs(event.dateEnd).format('YYYY-MM-DD HH:mm:ss'),
         term: event.term,
-        memo: event.memo,
+        // memo: event.memo,
         participants: await makeArray(event.id),
       }
 
@@ -144,163 +254,156 @@ const createRepeatCalendar = async (
 
     return createdEvents
   } catch (error) {
-    console.error('error :: service/calendar/createRecurringCalendar', error)
+    console.error('error :: service/calendar/calendarServiceUtil/createRecurringCalendar', error)
     throw error
   }
 }
 
-// 반복 일정 업뎃 유틸
-const updateRepeatCalendar = async (
-  userId: string,
-  groupId: string,
-  calendarUpdateDto: CalendarUpdateDto,
-  recurrenceCount: number,
-): Promise<CalendarUpdateResponseDto[]> => {
-  try {
-    const createdEvents: CalendarUpdateResponseDto[] = []
+/* // 반복 일정 업뎃 유틸
+// const updateRepeatCalendar = async (
+//   userId: string,
+//   groupId: string,
+//   calendarUpdateDto: CalendarUpdateDto,
+//   recurrenceCount: number,
+// ): Promise<CalendarUpdateResponseDto[]> => {
+//   try {
+//     const createdEvents: CalendarUpdateResponseDto[] = []
 
-    const startDate = new Date(dayjs(calendarUpdateDto.dateStart).format('YYYY-MM-DD HH:mm:ss'))
-    const endDate = new Date(dayjs(calendarUpdateDto.dateEnd).format('YYYY-MM-DD HH:mm:ss'))
+//     const startDate = new Date(dayjs(calendarUpdateDto.dateStart).format('YYYY-MM-DD HH:mm:ss'))
+//     const endDate = new Date(dayjs(calendarUpdateDto.dateEnd).format('YYYY-MM-DD HH:mm:ss'))
 
-    for (let i = 0; i < recurrenceCount; i++) {
-      const event = await prisma.calendar.create({
-        data: {
-          userId: userId,
-          groupId: groupId,
-          title: calendarUpdateDto.title,
-          dateStart: new Date(startDate),
-          dateEnd: new Date(endDate),
-          term: calendarUpdateDto.term,
-          memo: calendarUpdateDto.memo || '',
-        },
-      })
+//     for (let i = 0; i < recurrenceCount; i++) {
+//       const event = await prisma.calendar.create({
+//         data: {
+//           userId: userId,
+//           groupId: groupId,
+//           title: calendarUpdateDto.title,
+//           dateStart: new Date(startDate),
+//           dateEnd: new Date(endDate),
+//           term: calendarUpdateDto.term,
+//           // memo: calendarUpdateDto.memo || '',
+//         },
+//       })
 
-      // const participantUserIds: ParticipantInfo[] = (await makeArray(event.id));
-      await multipleParticipants(calendarUpdateDto.participants, groupId, event.id)
+//       await multipleParticipants(calendarUpdateDto.participants, groupId, event.id)
 
-      const data = {
-        Id: event.id,
-        userId: event.userId,
-        groupId: event.groupId,
-        title: event.title,
-        dateStart: dayjs(event.dateStart).format('YYYY-MM-DD HH:mm:ss'),
-        dateEnd: dayjs(event.dateEnd).format('YYYY-MM-DD HH:mm:ss'),
-        term: event.term,
-        memo: event.memo,
-        participants: await makeArray(event.id),
-      }
+//       const data = {
+//         Id: event.id,
+//         userId: event.userId,
+//         groupId: event.groupId,
+//         title: event.title,
+//         dateStart: dayjs(event.dateStart).format('YYYY-MM-DD HH:mm:ss'),
+//         dateEnd: dayjs(event.dateEnd).format('YYYY-MM-DD HH:mm:ss'),
+//         term: event.term,
+//         // memo: event.memo,
+//         participants: await makeArray(event.id),
+//       }
 
-      createdEvents.push(data)
+//       createdEvents.push(data)
 
-      switch (calendarUpdateDto.term) {
-        case 1: // 매일
-          startDate.setDate(startDate.getDate() + 1)
-          endDate.setDate(endDate.getDate() + 1)
-          break
-        case 2: // 매주
-          startDate.setDate(startDate.getDate() + 7)
-          endDate.setDate(endDate.getDate() + 7)
-          break
-        case 3: // 매달
-          startDate.setMonth(startDate.getMonth() + 1)
-          endDate.setMonth(endDate.getMonth() + 1)
-          break
-        case 4: // 매년
-          startDate.setFullYear(startDate.getFullYear() + 1)
-          endDate.setFullYear(endDate.getFullYear() + 1)
-          break
-        default:
-          break
-      }
-    }
+//       switch (calendarUpdateDto.term) {
+//         case 1: // 매일
+//           startDate.setDate(startDate.getDate() + 1)
+//           endDate.setDate(endDate.getDate() + 1)
+//           break
+//         case 2: // 매주
+//           startDate.setDate(startDate.getDate() + 7)
+//           endDate.setDate(endDate.getDate() + 7)
+//           break
+//         case 3: // 매달
+//           startDate.setMonth(startDate.getMonth() + 1)
+//           endDate.setMonth(endDate.getMonth() + 1)
+//           break
+//         case 4: // 매년
+//           startDate.setFullYear(startDate.getFullYear() + 1)
+//           endDate.setFullYear(endDate.getFullYear() + 1)
+//           break
+//         default:
+//           break
+//       }
+//     }
 
-    return createdEvents
-  } catch (error) {
-    console.error('error :: service/calendar/CalendarServiceUtils/updateRepeatCalendar', error)
-    throw error
-  }
-}
+//     return createdEvents
+//   } catch (error) {
+//     console.error('error :: service/calendar/CalendarServiceUtils/updateRepeatCalendar', error)
+//     throw error
+//   }
+// }
 
-// 반복 일정 '업뎃'에 사용되는 삭제 유틸
-const deleteRepeatCalendar = async (
-  eventId: number,
-  term: number,
-  userId: string,
-  groupId: string,
-  title: string,
-  memo: string,
+// // 반복 일정 '업뎃'에 사용되는 삭제 유틸
+// const deleteRepeatCalendar = async (
+//   eventId: number,
+//   // term: number,
+//   // userId: string,
+//   // groupId: string,
+//   // title: string,
+//   // memo: string,
+//   originId: number
+// ): Promise<void> => {
+//   try {
+//     // Step 1: 삭제할 calendarId 조회
+//     const calendarIdsToDelete = await prisma.calendar.findMany({
+//       where: {
+//         id: {
+//           gt: eventId,
+//         },
+//         originId: originId
+//         // memo: memo,
+//       },
+//       select: {
+//         id: true,
+//       },
+//     })
+
+//     // Step 2: 삭제할 calendarId에 해당하는 participant 삭제 및 개수 가져오기
+//     const deletedParticipants = await prisma.participant.deleteMany({
+//       where: {
+//         calendarId: {
+//           in: calendarIdsToDelete.map((calendar) => calendar.id),
+//         },
+//       },
+//     })
+
+//     // Step 3: 실제 calendar 삭제 및 개수 가져오기
+//     const deletedCalendars = await prisma.calendar.deleteMany({
+//       where: {
+//         id: {
+//           in: calendarIdsToDelete.map((calendar) => calendar.id),
+//         },
+//       },
+//     })
+
+//     console.log(`Deleted ${deletedCalendars.count} calendars and ${deletedParticipants.count} participants.`)
+//   } catch (error) {
+//     console.error('error :: service/calendar/calendarServiceUtil/deleteRepeatCalendar', error)
+//     throw error
+//   }
+// } */
+
+
+// ----------------------------------DELETE
+// 이후 모든 이벤트 삭제에 사용되는 삭제 유틸
+const deleteAfterCalendarUtil = async (
+  calendarId: number
 ): Promise<void> => {
   try {
-    // Step 1: 삭제할 calendarId 조회
-    const calendarIdsToDelete = await prisma.calendar.findMany({
-      where: {
-        id: {
-          gt: eventId,
-        },
-        term: term,
-        userId: userId,
-        groupId: groupId,
-        title: title,
-        memo: memo,
-      },
-      select: {
-        id: true,
-      },
-    })
 
-    // Step 2: 삭제할 calendarId에 해당하는 participant 삭제 및 개수 가져오기
-    const deletedParticipants = await prisma.participant.deleteMany({
-      where: {
-        calendarId: {
-          in: calendarIdsToDelete.map((calendar) => calendar.id),
-        },
-      },
-    })
+    const originIdToDelete = await findOriginId(calendarId)
 
-    // Step 3: 실제 calendar 삭제 및 개수 가져오기
-    const deletedCalendars = await prisma.calendar.deleteMany({
-      where: {
-        id: {
-          in: calendarIdsToDelete.map((calendar) => calendar.id),
-        },
-      },
-    })
-
-    console.log(`Deleted ${deletedCalendars.count} calendars and ${deletedParticipants.count} participants.`)
-  } catch (error) {
-    console.error('error :: service/calendar/calendarServiceUtil/deleteRepeatCalendar', error)
-    throw error
-  }
-}
-
-// 반복 일정 '삭제'에 사용되는 삭제 유틸
-const deleteThisRepeatCalendar = async (
-  calendarId: number,
-  term: number,
-  userId: string,
-  groupId: string,
-  title: string,
-  memo: string,
-): Promise<void> => {
-  try {
-    // Step 1: 삭제할 calendarId 조회
+    // Step 1: 삭제할 calendarId의 originId 조회
     const calendarIdsToDelete = await prisma.calendar.findMany({
       where: {
         id: {
           gte: calendarId,
         },
-        term: term,
-        userId: userId,
-        groupId: groupId,
-        title: title,
-        memo: memo,
+        originId: originIdToDelete
       },
       select: {
-        id: true,
+        id: true
       },
     })
 
-    // Step 2: 삭제할 calendarId에 해당하는 participant 삭제 및 개수 가져오기
+    // Step 2: 삭제할 calendarId에 해당하는 participant 삭제
     const deletedParticipants = await prisma.participant.deleteMany({
       where: {
         calendarId: {
@@ -309,19 +412,20 @@ const deleteThisRepeatCalendar = async (
       },
     })
 
-    // Step 3: 실제 calendar 삭제 및 개수 가져오기
+    // Step 3: 실제 calendar들 삭제
     const deletedCalendars = await prisma.calendar.deleteMany({
       where: {
         id: {
-          in: calendarIdsToDelete.map((calendar) => calendar.id),
+          gte: calendarId,
         },
-      },
+        originId: originIdToDelete
+      }
     })
 
-    // deletedCalendars와 deletedParticipants에 각각 몇 개가 삭제되었는지 정보가 들어있습니다.
     console.log(`Deleted ${deletedCalendars.count} calendars and ${deletedParticipants.count} participants.`)
+
   } catch (error) {
-    console.error('error :: service/calendar/calendarServiceUtil/deleteRepeatCalendar', error)
+    console.error('error :: service/calendar/calendarServiceUtil/deleteAfterCalendarUtil', error)
     throw error
   }
 }
@@ -397,8 +501,8 @@ const groupThisWeekEvents = async (events: CalendarEvent[]) => {
   return Object.values(groupedEvents)
 }
 
-//참여자가 여러명인 경우
-const multipleParticipants = async (participants: string[], groupId: string, calendarId: number) => {
+//참여자 삭제 및 생성
+const createParticipants = async (participants: string[], groupId: string, calendarId: number) => {
   const num: number = participants.length
 
   try {
@@ -421,7 +525,7 @@ const multipleParticipants = async (participants: string[], groupId: string, cal
       // Fetch additional participant information using getParticipantInfo service
       const participantInfo = await getParticipantInfo(userId)
 
-      const event = await prisma.participant.create({
+      await prisma.participant.create({
         data: {
           userId: userId,
           groupId: groupId,
@@ -565,20 +669,24 @@ const getParticipantInfo = async (userId: string): Promise<ParticipantInfo> => {
 
 export {
   findCalendarEventById,
-  findSchedulingEventById,
+  findRecentCalendar,
+  makeOriginId,
+  findOriginId,
+  // findSchedulingEventById,
   findParticipantEventById,
-  //makeCalendarEventExist,
-  checkExistSchedule,
+  // makeCalendarEventExist,
+  // checkExistSchedule,
+  createOneCalendar,
   createRepeatCalendar,
-  updateRepeatCalendar,
-  deleteRepeatCalendar,
-  deleteThisRepeatCalendar,
+  // updateRepeatCalendar,
+  // deleteRepeatCalendar,
+  deleteAfterCalendarUtil,
   getCurrentWeekDates,
   getCurrentMonthDates,
   getDayOfWeek,
   groupThisWeekEvents,
   getParticipantsForEvent,
-  multipleParticipants,
+  createParticipants,
   updateParticipants,
   makeArray,
   getParticipantInfo,
