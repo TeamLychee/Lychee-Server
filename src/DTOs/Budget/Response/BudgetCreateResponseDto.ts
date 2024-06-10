@@ -7,5 +7,5 @@ export interface BudgetCreateResponseDto extends BudgetCreateRequestDto {
   userColor: string
   userName: string
   createdAt: Date
-  isDone : boolean
+  isDone: boolean
 }

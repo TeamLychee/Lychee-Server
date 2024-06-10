@@ -15,7 +15,7 @@ model User {
   groupId         String
   birth           String?
   sex             String?
-  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)  
+  createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
   password        String?
   refreshToken    String?
   fcmToken        String?
