@@ -37,15 +37,12 @@ const signInGoogle = async (socialToken: string) => {
       },
     })
 
-    console.log('requested')
-
     if (!user) {
       throw errorGenerator({
         msg: message.BAD_REQUEST,
         statusCode: statusCode.UNAUTHORIZED,
       })
     }
-    console.log(user.data) //모양 확인
     return user.data
   } catch (err) {
     throw errorGenerator({
@@ -53,22 +50,6 @@ const signInGoogle = async (socialToken: string) => {
       statusCode: statusCode.UNAUTHORIZED,
     })
   }
-  //   const userId = user.data.id
-  //   if (!userId) return exceptionMessage.INVALID_USER
-  //   const name = user.data.name
-  //   const email = user.data.email
-
-  //   const googleUser: SocialUser = {
-  //     userId: userId,
-  //     name: name,
-  //     email: email,
-  //   }
-
-  //   return googleUser
-  // } catch (error) {
-  //   console.log('googleAuth error', error)
-  //   return null
-  // }
 }
 
 export { signInKakao, signInGoogle }
