@@ -31,7 +31,9 @@ const createUser = async (signupDtO: SignupDto) => {
       email: signupDtO.email,
       sex: signupDtO.sex,
       birth: signupDtO.birth,
-      password: userpassword
+      password: userpassword,
+      fcmToken: '',
+      refreshToken: '',
     },
   })
 
@@ -39,7 +41,7 @@ const createUser = async (signupDtO: SignupDto) => {
     data: {
       userId: user.id,
       groupId: user.groupId,
-      state: true, 
+      state: true,
     },
   })
 

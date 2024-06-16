@@ -13,12 +13,12 @@ model User {
   userColor       String
   email           String          @unique
   groupId         String
-  birth           String
-  sex             String
+  birth           String?
+  sex             String?
   createdAt       DateTime        @default(dbgenerated("NOW()")) @db.DateTime(0)
-  password        String
-  refreshToken    String
-  fcmToken        String
+  password        String?
+  refreshToken    String?
+  fcmToken        String?
   AdjustmentMinus Adjustment[]    @relation("minusUser")
   AdjustmentPlus  Adjustment[]    @relation("plusUser")
   CalendarUser    Calendar[]      @relation("user")
