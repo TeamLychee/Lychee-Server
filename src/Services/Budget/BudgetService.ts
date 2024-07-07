@@ -429,9 +429,21 @@ const calculateCustomSpendingList = async (groupId: string) => {
     }
   }
   for (let [key, change] of adjustmentList) {
-    let [fromId, toId] = key.split('-')
+    let [fromName, toName] = key.split('-')
+    let fromId = (await UserServiceUtils.findUserById(fromName)).id
+    let toId = (await UserServiceUtils.findUserById(toName)).id
     await sendToAdjustments(groupId, fromId, toId, change)
   }
+
+  await prisma.customUserSpendings.updateMany({
+    where: {
+      groupId: groupId,
+      isDone: false,
+    },
+    data: {
+      isDone: true,
+    },
+  })
 
   return adjustmentList
 }
@@ -448,9 +460,6 @@ const getGroupMemberSpending = async (groupId: string) => {
     _sum: {
       spendings: true,
     },
-    // having:{
-    //   groupId: groupId
-    // }
   })
 
   for (const group of GroupSpending) {
@@ -474,7 +483,7 @@ const getGroupMemberSpending = async (groupId: string) => {
       }
       member.userSpending -= groupAvg
     })
-    //console.log('각 지출액 - 그룹 평균 지출액:', groupMemberSpendings)
+
     return groupMemberSpendings
   }
 }
@@ -591,6 +600,7 @@ const AdjAtBudget = async (groupId: string) => {
 //정산파트2//
 //정산알림보내기
 const getAdjustmentsCalc = async (groupId: string) => {
+  await calculateCustomSpendingList(groupId)
   const GroupMemberSpendingsAfter = await getGroupMemberSpending(groupId)
 
   if (!GroupMemberSpendingsAfter) {
@@ -633,9 +643,6 @@ const getAdjustmentsCalc = async (groupId: string) => {
 
       Positives = Positives.sort((a, b) => b.userSpending - a.userSpending)
       Negatives = Negatives.sort((a, b) => b.userSpending - a.userSpending)
-
-      // console.log('whilepos', Positives)
-      // console.log('whileneg', Negatives)
     }
   }
 
