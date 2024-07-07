@@ -177,7 +177,7 @@ model CustomUserSpendings {
   id        Int      @id @default(autoincrement())
   userId    String
   groupId   String
-  spendings Float    @default(0)
+  spendings String
   createdAt DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
   isDone    Boolean  @default(false)
 

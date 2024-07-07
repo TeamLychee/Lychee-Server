@@ -361,11 +361,34 @@ const showByCategory = async (groupId: string, category: string) => {
   return BudgetsToShow
 }
 //db에 커스텀 지출 리스트 등록하기
+const postCustomSpendingList = async (customSpending: { userId: string; spendingPortion: string }) => {
+  let groupId = await GroupServiceUtils.findGroupIdByUserId(customSpending.userId)
+  await prisma.customUserSpendings.create({
+    data: {
+      userId: customSpending.userId,
+      groupId: groupId,
+      spendings: customSpending.spendingPortion,
+    },
+  })
+}
 
 //db에서 커스텀 지출 리스트 가져오기
 const getCustomSpendingList = async (groupId: string): Promise<{ userId: string; spendingPortion: string }[]> => {
-  // spendingPortion을 string으로 할까 아니면 string[]으로 할까...........
-  return []
+  let customSpendingList: { userId: string; spendingPortion: string }[] = []
+  const listFromDB = await prisma.customUserSpendings.findMany({
+    where: {
+      groupId: groupId,
+      isDone: false,
+    },
+  })
+
+  listFromDB.forEach((spending) => {
+    customSpendingList.push({
+      userId: spending.userId,
+      spendingPortion: spending.spendings,
+    })
+  })
+  return customSpendingList
 }
 
 const calculateCustomSpendingList = async (groupId: string) => {
@@ -383,31 +406,34 @@ const calculateCustomSpendingList = async (groupId: string) => {
       let amount = parseInt(senderList[j + 1])
 
       if (adjustmentList.has(senderToReceiver)) {
-        console.log('when adjustmentList.get(senderToReceiver)!=null 정방향 조합이 있을때')
+        //정방향 조합이 있는 경우
         let pastAmount = adjustmentList.get(senderToReceiver)
         adjustmentList.set(senderToReceiver, pastAmount + amount)
       } else if (adjustmentList.has(receiverToSender)) {
-        console.log('when receiverToSender!=null 반대조합이 있을때')
+        //반대 조합이 있는 경우
 
         let pastAmount = adjustmentList.get(receiverToSender)
         let rest = pastAmount - amount
 
         if (rest > 0) {
           adjustmentList.set(receiverToSender, rest)
-          console.log(`rest>0 ${receiverToSender} ${rest}`)
         } else if (rest == 0) {
           adjustmentList.delete(receiverToSender)
-          console.log(`rest==0 ${receiverToSender} ${rest}`)
         } else {
           adjustmentList.delete(receiverToSender)
           adjustmentList.set(senderToReceiver, -rest)
-          console.log(`rest<0 ${senderToReceiver} ${-rest}`)
         }
       } else {
         adjustmentList.set(senderToReceiver, amount)
       }
     }
   }
+  for (let [key, change] of adjustmentList) {
+    let [fromId, toId] = key.split('-')
+    await sendToAdjustments(groupId, fromId, toId, change)
+  }
+
+  return adjustmentList
 }
 
 //정산파트1 최종함수//
@@ -803,4 +829,6 @@ export {
   deleteSubCategory,
   getBudget,
   isCalculating,
+  postCustomSpendingList,
+  calculateCustomSpendingList,
 }
