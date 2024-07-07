@@ -394,6 +394,9 @@ const getCustomSpendingList = async (groupId: string): Promise<{ userId: string;
 const calculateCustomSpendingList = async (groupId: string) => {
   //getCustomSpendingList 호출
   let customSpendingList = await getCustomSpendingList(groupId)
+  if (customSpendingList.length == 0) {
+    return 0 //문제된다면 여기
+  }
   let adjustmentList = new Map()
 
   for (let spending of customSpendingList) {
