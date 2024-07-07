@@ -361,13 +361,13 @@ const showByCategory = async (groupId: string, category: string) => {
   return BudgetsToShow
 }
 //db에 커스텀 지출 리스트 등록하기
-const postCustomSpendingList = async (customSpending: { userId: string; spendingPortion: string }) => {
-  let groupId = await GroupServiceUtils.findGroupIdByUserId(customSpending.userId)
+const postCustomSpendingList = async (userId: string, spendingPortion: string) => {
+  let groupId = await GroupServiceUtils.findGroupIdByUserId(userId)
   await prisma.customUserSpendings.create({
     data: {
-      userId: customSpending.userId,
+      userId: userId,
       groupId: groupId,
-      spendings: customSpending.spendingPortion,
+      spendings: spendingPortion,
     },
   })
 }

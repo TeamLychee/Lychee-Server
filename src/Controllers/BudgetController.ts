@@ -153,6 +153,8 @@ const createCustomBudget = async (req: Request, res: Response, next: NextFunctio
   const spendingPortion = req.body.spendingPortion
 
   try {
+    const data = await BudgetService.postCustomSpendingList(userId, spendingPortion)
+    return res.send(data)
   } catch (error) {
     res.status(500).json({ error: 'Error Creating Custom Budget: Controller' })
   }
@@ -288,4 +290,5 @@ export {
   getBudget,
   getAdjNoti,
   isCalculating,
+  createCustomBudget,
 }
