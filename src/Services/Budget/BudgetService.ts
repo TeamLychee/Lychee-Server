@@ -431,10 +431,9 @@ const calculateCustomSpendingList = async (groupId: string) => {
       }
     }
   }
+
   for (let [key, change] of adjustmentList) {
-    let [fromName, toName] = key.split('-')
-    let fromId = (await UserServiceUtils.findUserById(fromName)).id
-    let toId = (await UserServiceUtils.findUserById(toName)).id
+    let [fromId, toId] = key.split('-')
     await sendToAdjustments(groupId, fromId, toId, change)
   }
 
@@ -681,8 +680,6 @@ const takeFromAdjustments = async (groupId: string) => {
     },
   })
 
-  console.log(Adjustment)
-
   const AdjustmentToReturn: {
     plusUserId: string
     plusUserName: string
@@ -816,10 +813,6 @@ const isCalculating = async (groupId: string) => {
     console.error('error :: service/budgetsercive/isCalculating', error)
     throw error
   }
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export {
