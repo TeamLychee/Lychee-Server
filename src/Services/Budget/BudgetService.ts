@@ -680,7 +680,22 @@ const takeFromAdjustments = async (groupId: string) => {
     },
   })
 
-  const AdjustmentToReturn: {
+  const adjustmentMap = new Map<string, number>()
+
+  Adjustment.forEach((record) => {
+    if (!record.plusUserId || !record.minusUserId) {
+      throw new Error('Null Error: Adjustment to Return')
+    }
+
+    const key = `${record.plusUserId}-${record.minusUserId}`
+    if (adjustmentMap.has(key)) {
+      adjustmentMap.set(key, adjustmentMap.get(key)! + record.change)
+    } else {
+      adjustmentMap.set(key, record.change)
+    }
+  })
+
+  const adjustmentToReturn: {
     plusUserId: string
     plusUserName: string
     plusUserColor: string
@@ -691,18 +706,13 @@ const takeFromAdjustments = async (groupId: string) => {
   }[] = []
 
   await Promise.all(
-    Adjustment.map(async (record) => {
-      if (!record.plusUserId || !record.minusUserId) {
-        throw new Error('Null Error: Adjustment to Return')
-      }
+    Array.from(adjustmentMap.entries()).map(async ([key, change]) => {
+      const [plusUserId, minusUserId] = key.split('-')
 
-      let plusUserId = record.plusUserId
-      let plusUserName = await UserServiceUtils.getUserNameByUserId(record.plusUserId)
-      let plusUserColor = await UserServiceUtils.findUserColorByUserId(record.plusUserId)
-      let minusUserId = record.minusUserId
-      let minusUserName = await UserServiceUtils.getUserNameByUserId(record.minusUserId)
-      let minusUserColor = await UserServiceUtils.findUserColorByUserId(record.minusUserId)
-      let change = record.change
+      let plusUserName = await UserServiceUtils.getUserNameByUserId(plusUserId)
+      let plusUserColor = await UserServiceUtils.findUserColorByUserId(plusUserId)
+      let minusUserName = await UserServiceUtils.getUserNameByUserId(minusUserId)
+      let minusUserColor = await UserServiceUtils.findUserColorByUserId(minusUserId)
 
       if (!plusUserColor) {
         throw new Error('Null Error: plusUserColor')
@@ -712,7 +722,7 @@ const takeFromAdjustments = async (groupId: string) => {
         throw new Error('Null Error: minusUserColor')
       }
 
-      AdjustmentToReturn.push({
+      adjustmentToReturn.push({
         plusUserId,
         plusUserName,
         plusUserColor,
@@ -723,7 +733,44 @@ const takeFromAdjustments = async (groupId: string) => {
       })
     }),
   )
-  return AdjustmentToReturn
+  console.log('==============')
+  console.log(adjustmentToReturn)
+  return adjustmentToReturn
+
+  // await Promise.all(
+  //   Adjustment.map(async (record) => {
+  //     if (!record.plusUserId || !record.minusUserId) {
+  //       throw new Error('Null Error: Adjustment to Return')
+  //     }
+
+  //     let plusUserId = record.plusUserId
+  //     let plusUserName = await UserServiceUtils.getUserNameByUserId(record.plusUserId)
+  //     let plusUserColor = await UserServiceUtils.findUserColorByUserId(record.plusUserId)
+  //     let minusUserId = record.minusUserId
+  //     let minusUserName = await UserServiceUtils.getUserNameByUserId(record.minusUserId)
+  //     let minusUserColor = await UserServiceUtils.findUserColorByUserId(record.minusUserId)
+  //     let change = record.change
+
+  //     if (!plusUserColor) {
+  //       throw new Error('Null Error: plusUserColor')
+  //     }
+
+  //     if (!minusUserColor) {
+  //       throw new Error('Null Error: minusUserColor')
+  //     }
+
+  //     AdjustmentToReturn.push({
+  //       plusUserId,
+  //       plusUserName,
+  //       plusUserColor,
+  //       minusUserId,
+  //       minusUserName,
+  //       minusUserColor,
+  //       change,
+  //     })
+  //   }),
+  // )
+  // return AdjustmentToReturn
 }
 
 //정산 마이너 기능 (날짜 반환)
