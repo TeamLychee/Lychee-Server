@@ -509,6 +509,7 @@ const AdjAtBudget = async (groupId: string) => {
 
 //정산파트2//
 //정산알림보내기
+//'정산'버튼 클릭 서비스
 const getAdjustmentsCalc = async (groupId: string) => {
   const GroupMemberSpendingsAfter = await getGroupMemberSpending(groupId)
 
