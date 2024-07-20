@@ -178,7 +178,7 @@ model Adjustment {
   groupId     String
   minusUserId String?
   plusUserId  String?
-  change      Int
+  change      Float
   createdAt   DateTime @default(dbgenerated("NOW()")) @db.DateTime(0)
   group       Group    @relation(fields: [groupId], references: [id])
   minusUser   User?    @relation("minusUser", fields: [minusUserId], references: [id])

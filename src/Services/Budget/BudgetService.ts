@@ -391,7 +391,7 @@ const getGroupMemberSpending = async (groupId: string) => {
     if (!memberNum) {
       throw new Error('memberNum Error: Null')
     }
-    const groupAvg = Math.round(groupSum / memberNum)
+    const groupAvg = groupSum / memberNum
 
     let groupMemberSpendings: { userId: string; userSpending: number }[] = []
     groupMemberSpendings = await getUserSpending(groupId)
@@ -402,7 +402,6 @@ const getGroupMemberSpending = async (groupId: string) => {
       }
       member.userSpending -= groupAvg
     })
-    //console.log('각 지출액 - 그룹 평균 지출액:', groupMemberSpendings)
     return groupMemberSpendings
   }
 }
@@ -459,7 +458,6 @@ const getUserSpending = async (groupId: string): Promise<{ userId: string; userS
       })
     }),
   )
-
   return groupMemberSpendingsBefore
 }
 
@@ -499,10 +497,6 @@ const AdjAtBudget = async (groupId: string) => {
       }
       member.userSpending -= groupAvg
     })
-
-    //const groupOwner = await UserServiceUtils.findGroupOwner(groupId)
-    // 알림 생성
-    //await NotificationService.makeNotification(groupId, groupOwner, "createSchedule")
 
     return {
       groupAvg,
@@ -572,7 +566,7 @@ const getAdjustmentsCalc = async (groupId: string) => {
 }
 
 const sendToAdjustments = async (groupId: string, fromId: string, toId: string, change: number) => {
-  await prisma.adjustment.create({
+await prisma.adjustment.create({
     data: {
       groupId: groupId,
       plusUserId: toId,
@@ -595,8 +589,6 @@ const takeFromAdjustments = async (groupId: string) => {
       isDone: false,
     },
   })
-
-  console.log(Adjustment)
 
   const AdjustmentToReturn: {
     plusUserId: string
